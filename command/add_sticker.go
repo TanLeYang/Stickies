@@ -53,13 +53,18 @@ func (c *AddSticker) Handle(message *tgbotapi.Message) {
 }
 
 func (c *AddSticker) uploadStage(message *tgbotapi.Message) {
-	sticker := message.Sticker
-	if sticker == nil {
-		interaction.Reply(c.botapi, message, "Please include a sticker or PNG file.")
+	var file tgbotapi.RequestFileData
+	if message.Sticker != nil {
+		file = tgbotapi.FileID(message.Sticker.FileID)
+	} else if message.Document != nil && message.Document.MimeType == "image/png" {
+		file = tgbotapi.FileID(message.Document.FileID)
+	} else {
+		interaction.Reply(c.botapi, message, `Please send either a sticker or PNG file
+			not exceeding 512kb in size, either width or height exactly 512px`)
 		return
 	}
 
-	c.stickerToAdd = tgbotapi.FileID(sticker.FileID)
+	c.stickerToAdd = file
 	interaction.Reply(c.botapi, message, "Thanks! Now send me an emoji that corresponds to the sticker.")
 	c.currentStage = nextStage(addStickerStages, c.currentStage, true)
 }
