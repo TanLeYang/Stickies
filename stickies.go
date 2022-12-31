@@ -8,6 +8,7 @@ import (
 
 	"github.com/TanLeYang/stickies/command"
 	"github.com/TanLeYang/stickies/config"
+	"github.com/TanLeYang/stickies/interaction"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -69,7 +70,7 @@ func (sb *StickiesBot) handleUpdate(update tgbotapi.Update) {
 
 func (sb *StickiesBot) handleMessage(message *tgbotapi.Message) {
 	if sb.currrentCommand == nil && !message.IsCommand() {
-		sb.tgBotAPI.Send(tgbotapi.NewMessage(message.Chat.ID, "Hello! Start by choosing a command."))
+		interaction.Reply(sb.tgBotAPI, message, "Hello! Start by choosing a command.")
 		return
 	}
 
@@ -87,7 +88,7 @@ func (sb *StickiesBot) handleCommand(message *tgbotapi.Message) {
 		sb.currrentCommand = command.NewAddStickerCommand(sb.tgBotAPI, sb.conf.WalnutStickerSetName, sb.conf.WalnutStickerUserID)
 		break
 	default:
-		sb.tgBotAPI.Send(tgbotapi.NewMessage(message.Chat.ID, "Sorry, I don't understand that command."))
+		interaction.Reply(sb.tgBotAPI, message, "Sorry, I don't understand that command. Please pick a command from the list.")
 		sb.currrentCommand = nil
 	}
 
