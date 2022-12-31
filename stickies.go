@@ -12,14 +12,16 @@ import (
 )
 
 type StickiesBot struct {
-	tgBotAPI *tgbotapi.BotAPI
-	conf     config.StickiesConfig
+	tgBotAPI        *tgbotapi.BotAPI
+	conf            config.StickiesConfig
+	currrentCommand command.Command
 }
 
 func NewStickiesBot(tgBotAPI *tgbotapi.BotAPI, conf config.StickiesConfig) *StickiesBot {
 	return &StickiesBot{
 		tgBotAPI,
 		conf,
+		nil,
 	}
 }
 
@@ -66,17 +68,30 @@ func (sb *StickiesBot) handleUpdate(update tgbotapi.Update) {
 }
 
 func (sb *StickiesBot) handleMessage(message *tgbotapi.Message) {
-	user := message.From
-	text := message.Text
-
-	if user == nil {
+	if sb.currrentCommand == nil && !message.IsCommand() {
+		sb.tgBotAPI.Send(tgbotapi.NewMessage(message.Chat.ID, "Hello! Start by choosing a command."))
 		return
 	}
 
-	log.Printf("%s: %s", user.FirstName, text)
+	if message.IsCommand() {
+		sb.handleCommand(message)
+		return
+	}
 
-	command.AddSticker(sb.tgBotAPI, message, sb.conf.WalnutStickerSetName, sb.conf.WalnutStickerUserID)
+	sb.currrentCommand.Handle(message)
+}
 
-	reply := tgbotapi.NewMessage(message.Chat.ID, "OK")
-	sb.tgBotAPI.Send(reply)
+func (sb *StickiesBot) handleCommand(message *tgbotapi.Message) {
+	switch message.Command() {
+	case "add":
+		sb.currrentCommand = command.NewAddStickerCommand(sb.tgBotAPI, sb.conf.WalnutStickerSetName, sb.conf.WalnutStickerUserID)
+		break
+	default:
+		sb.tgBotAPI.Send(tgbotapi.NewMessage(message.Chat.ID, "Sorry, I don't understand that command."))
+		sb.currrentCommand = nil
+	}
+
+	if sb.currrentCommand != nil {
+		sb.currrentCommand.Start(message)
+	}
 }
