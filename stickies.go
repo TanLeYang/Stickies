@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/TanLeYang/stickies/command"
 	"github.com/TanLeYang/stickies/config"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -74,35 +75,8 @@ func (sb *StickiesBot) handleMessage(message *tgbotapi.Message) {
 
 	log.Printf("%s: %s", user.FirstName, text)
 
-	if text == "new-sticker" {
-		sb.addStickerToPack()
-	}
+	command.AddSticker(sb.tgBotAPI, message, sb.conf.WalnutStickerSetName, sb.conf.WalnutStickerUserID)
 
-	reply := tgbotapi.NewMessage(message.Chat.ID, message.Text)
-	reply.ReplyToMessageID = message.MessageID
-
+	reply := tgbotapi.NewMessage(message.Chat.ID, "OK")
 	sb.tgBotAPI.Send(reply)
 }
-
-func (sb *StickiesBot) addStickerToPack() {
-	// hard coded for now, in the future will take in a picture, upload it and get the id
-	fileID := "CAACAgUAAxkBAAMUY67gccAgX8NFESBqsnPG-_aVNHoAAg0IAAJhGzhV3r2-56AaX0MtBA"
-
-	// Hard coded sticker to upload to try
-	addStickerConfig := tgbotapi.AddStickerConfig{
-		UserID:       sb.conf.WalnutStickerUserID,
-		Name:         sb.conf.WalnutStickerSetName,
-		PNGSticker:   tgbotapi.FileID(fileID),
-		TGSSticker:   nil,
-		Emojis:       "🤩",
-		MaskPosition: nil,
-	}
-
-	resp, err := sb.tgBotAPI.Request(addStickerConfig)
-	if err != nil {
-		log.Printf("Error making add sticker request: \n %s \n", err)
-	} else {
-		log.Printf("Response from make sticker request: \n %s \n", resp.Description)
-	}
-}
-
