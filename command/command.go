@@ -6,3 +6,5 @@ type Command interface {
 	Start(*tgbotapi.Message)
 	Handle(*tgbotapi.Message)
 }
+
+type CommandStage string
