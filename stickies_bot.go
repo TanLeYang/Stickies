@@ -101,7 +101,10 @@ func (h *UpdateHandler) handleMessage(message *tgbotapi.Message) {
 		return
 	}
 
-	h.currentCommand.Handle(message)
+	expectFutureMessages := h.currentCommand.Handle(message)
+	if !expectFutureMessages {
+		h.currentCommand = nil
+	}
 }
 
 func (h *UpdateHandler) handleCommand(message *tgbotapi.Message) {
@@ -109,7 +112,7 @@ func (h *UpdateHandler) handleCommand(message *tgbotapi.Message) {
 	case "addsticker":
 		h.currentCommand = command.NewAddStickerCommand(h.tgBotAPI, h.stickiesSetRepo)
 		break
-	case "createstickerset":
+	case "createset":
 		h.currentCommand = command.NewCreateStickiesSetCommand(h.tgBotAPI, h.stickiesSetRepo)
 		break
 	case "done":
@@ -122,6 +125,9 @@ func (h *UpdateHandler) handleCommand(message *tgbotapi.Message) {
 	}
 
 	if h.currentCommand != nil {
-		h.currentCommand.Start(message)
+		expectFutureMessages := h.currentCommand.Start(message)
+		if !expectFutureMessages {
+			h.currentCommand = nil
+		}
 	}
 }
