@@ -7,22 +7,22 @@ import (
 	"os"
 
 	"github.com/TanLeYang/stickies/command"
-	"github.com/TanLeYang/stickies/config"
 	"github.com/TanLeYang/stickies/interaction"
+	stickiesset "github.com/TanLeYang/stickies/stickies_set"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type StickiesBot struct {
-	tgBotAPI        *tgbotapi.BotAPI
-	conf            config.StickiesConfig
-	currrentCommand command.Command
+	tgBotAPI         *tgbotapi.BotAPI
+	stickiesSetRepo  stickiesset.StickiesSetRepository
+	chatToHandlerMap map[int64]*UpdateHandler
 }
 
-func NewStickiesBot(tgBotAPI *tgbotapi.BotAPI, conf config.StickiesConfig) *StickiesBot {
+func NewStickiesBot(tgBotAPI *tgbotapi.BotAPI, stickiesSetRepo stickiesset.StickiesSetRepository) *StickiesBot {
 	return &StickiesBot{
-		tgBotAPI,
-		conf,
-		nil,
+		tgBotAPI:        tgBotAPI,
+		stickiesSetRepo: stickiesSetRepo,
+		chatToHandlerMap: map[int64]*UpdateHandler{},
 	}
 }
 
@@ -50,16 +50,38 @@ func (sb *StickiesBot) receiveUpdates(ctx context.Context, updates tgbotapi.Upda
 			return
 
 		case update := <-updates:
-			sb.handleUpdate(update)
+			handler := sb.getHandlerForChat(update.FromChat().ID)	
+			go handler.handleUpdate(update)
 		}
 	}
 }
 
-func (sb *StickiesBot) handleUpdate(update tgbotapi.Update) {
+func (sb *StickiesBot) getHandlerForChat(chatid int64) *UpdateHandler {
+	handler, ok := sb.chatToHandlerMap[chatid]
+	if ok {
+		return handler
+	} else {
+		newHandler := UpdateHandler{
+			tgBotAPI: sb.tgBotAPI,
+			stickiesSetRepo: sb.stickiesSetRepo,
+		}
+		sb.chatToHandlerMap[chatid] = &newHandler
+
+		return &newHandler
+	}
+}
+
+type UpdateHandler struct {
+	tgBotAPI        *tgbotapi.BotAPI
+	currentCommand  command.Command
+	stickiesSetRepo stickiesset.StickiesSetRepository
+}
+
+func (h *UpdateHandler) handleUpdate(update tgbotapi.Update) {
 	switch {
 	// Handle messages
 	case update.Message != nil:
-		sb.handleMessage(update.Message)
+		h.handleMessage(update.Message)
 		break
 
 	// Handle button clicks
@@ -68,31 +90,34 @@ func (sb *StickiesBot) handleUpdate(update tgbotapi.Update) {
 	}
 }
 
-func (sb *StickiesBot) handleMessage(message *tgbotapi.Message) {
-	if sb.currrentCommand == nil && !message.IsCommand() {
-		interaction.Reply(sb.tgBotAPI, message, "Hello! Start by choosing a command.")
+func (h *UpdateHandler) handleMessage(message *tgbotapi.Message) {
+	if h.currentCommand == nil && !message.IsCommand() {
+		interaction.Reply(h.tgBotAPI, message, "Hello! Start by choosing a command.")
 		return
 	}
 
 	if message.IsCommand() {
-		sb.handleCommand(message)
+		h.handleCommand(message)
 		return
 	}
 
-	sb.currrentCommand.Handle(message)
+	h.currentCommand.Handle(message)
 }
 
-func (sb *StickiesBot) handleCommand(message *tgbotapi.Message) {
+func (h *UpdateHandler) handleCommand(message *tgbotapi.Message) {
 	switch message.Command() {
-	case "add":
-		sb.currrentCommand = command.NewAddStickerCommand(sb.tgBotAPI, sb.conf.WalnutStickerSetName, sb.conf.WalnutStickerUserID)
+	case "addsticker":
+		h.currentCommand = command.NewAddStickerCommand(h.tgBotAPI, h.stickiesSetRepo)
+		break
+	case "createstickerset":
+		h.currentCommand = command.NewCreateStickiesSetCommand(h.tgBotAPI, h.stickiesSetRepo)
 		break
 	default:
-		interaction.Reply(sb.tgBotAPI, message, "Sorry, I don't understand that command. Please pick a command from the list.")
-		sb.currrentCommand = nil
+		interaction.Reply(h.tgBotAPI, message, "Sorry, I don't understand that command. Please pick a command from the list.")
+		h.currentCommand = nil
 	}
 
-	if sb.currrentCommand != nil {
-		sb.currrentCommand.Start(message)
+	if h.currentCommand != nil {
+		h.currentCommand.Start(message)
 	}
 }

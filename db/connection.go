@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"os"
 
 	"gorm.io/driver/postgres"
@@ -8,6 +9,13 @@ import (
 )
 
 func GetConnection() (*gorm.DB, error) {
-	dbUrl := os.Getenv("DATABASE_URL")
-	return gorm.Open(postgres.Open(dbUrl), &gorm.Config{})
+	dsn := fmt.Sprintf(
+		"host=%s port=%s user=%s dbname=%s password=%s",
+		os.Getenv("DATABASE_HOST"),
+		os.Getenv("DATABASE_PORT"),
+		os.Getenv("DATABASE_USER"),
+		os.Getenv("DATABASE_DBNAME"),
+		os.Getenv("DATABASE_PASSWORD"),
+	)
+	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
 }
