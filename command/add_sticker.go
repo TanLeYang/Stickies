@@ -87,7 +87,7 @@ func uploadStickerInteraction(botapi *tgbotapi.BotAPI, message *tgbotapi.Message
 		file = tgbotapi.FileID(message.Document.FileID)
 	} else {
 		interaction.Reply(botapi, message, `Please send either a sticker or PNG file
-			not exceeding 512kb in size, either width or height exactly 512px`)
+			not exceeding 512kb in size, either width or height exactly 512px.`)
 		return nil
 	}
 
@@ -106,7 +106,8 @@ func (c *AddSticker) chooseEmojiStage(message *tgbotapi.Message) {
 	if err != nil {
 		interaction.Reply(c.botapi, message, "Sorry, something went wrong, please restart and try again.")
 	} else {
-		interaction.Reply(c.botapi, message, "Nice! Sticker has been added to the set. To add another one, send me the next sticker.")
+		interaction.Reply(c.botapi, message,
+			"Nice! Sticker has been added to the set. To add another one, send me the next sticker. Use the /done command once you're done.")
 	}
 
 	c.currentStage = Upload

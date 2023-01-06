@@ -112,6 +112,10 @@ func (h *UpdateHandler) handleCommand(message *tgbotapi.Message) {
 	case "createstickerset":
 		h.currentCommand = command.NewCreateStickiesSetCommand(h.tgBotAPI, h.stickiesSetRepo)
 		break
+	case "done":
+		interaction.Reply(h.tgBotAPI, message, "Ok!")
+		h.currentCommand = nil
+		break
 	default:
 		interaction.Reply(h.tgBotAPI, message, "Sorry, I don't understand that command. Please pick a command from the list.")
 		h.currentCommand = nil
