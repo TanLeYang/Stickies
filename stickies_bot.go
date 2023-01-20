@@ -101,8 +101,7 @@ func (h *UpdateHandler) handleMessage(message *tgbotapi.Message) {
 		return
 	}
 
-	expectFutureMessages := h.currentCommand.Handle(message)
-	if !expectFutureMessages {
+	if h.currentCommand.Handle(message) == command.CommandComplete {
 		h.currentCommand = nil
 	}
 }
@@ -127,8 +126,7 @@ func (h *UpdateHandler) handleCommand(message *tgbotapi.Message) {
 	}
 
 	if h.currentCommand != nil {
-		expectFutureMessages := h.currentCommand.Start(message)
-		if !expectFutureMessages {
+		if h.currentCommand.Start(message) == command.CommandComplete {
 			h.currentCommand = nil
 		}
 	}

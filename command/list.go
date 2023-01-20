@@ -21,12 +21,12 @@ func NewListCommand(botapi *tgbotapi.BotAPI, stickiesSetRepo stickiesset.Stickie
 	}
 }
 
-func (c *List) Start(message *tgbotapi.Message) bool {
+func (c *List) Start(message *tgbotapi.Message) CommandOngoingStatus {
 	userID := message.From.ID
 	setsOwnedByUser, err := c.stickiesSetRepo.GetByOwner(userID)
 	if err != nil {
 		interaction.GenericErrorReply(c.botapi, message)
-		return false
+		return CommandComplete
 	}
 
 	for _, set := range setsOwnedByUser {
@@ -36,10 +36,10 @@ func (c *List) Start(message *tgbotapi.Message) bool {
 		interaction.Reply(c.botapi, message, uniqueCode)
 	}
 
-	return false
+	return CommandComplete
 }
 
-func (c *List) Handle(message *tgbotapi.Message) bool {
+func (c *List) Handle(message *tgbotapi.Message) CommandOngoingStatus {
 	log.Printf("List command does not expect further user interaction, message received: %v", message)
-	return false
+	return CommandComplete
 }

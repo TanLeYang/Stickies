@@ -32,12 +32,12 @@ func NewAddStickerCommand(botapi *tgbotapi.BotAPI, stickiesSetRepo stickiesset.S
 	}
 }
 
-func (c *AddSticker) Start(message *tgbotapi.Message) bool {
+func (c *AddSticker) Start(message *tgbotapi.Message) CommandOngoingStatus {
 	interaction.Reply(c.botapi, message, "Please send me the unique sharing code of the sticker set you wish to add stickers to.")
-	return true 
+	return CommandOngoing 
 }
 
-func (c *AddSticker) Handle(message *tgbotapi.Message) bool {
+func (c *AddSticker) Handle(message *tgbotapi.Message) CommandOngoingStatus {
 	switch c.currentStage {
 	case EnterUniqueCode:
 		return c.enterUniqueCodeStage(message)
@@ -47,16 +47,16 @@ func (c *AddSticker) Handle(message *tgbotapi.Message) bool {
 		return c.chooseEmojiStage(message)
 	default:
 		log.Panicf("Undefined stage for AddSticker command: %s", c.currentStage)
-		return false
+		return CommandComplete
 	}
 }
 
-func (c *AddSticker) enterUniqueCodeStage(message *tgbotapi.Message) bool {
+func (c *AddSticker) enterUniqueCodeStage(message *tgbotapi.Message) CommandOngoingStatus {
 	uniqueCode := message.Text
 	stickiesSet, err := c.stickiesSetRepo.GetByUniqueCode(uniqueCode)
 	if err != nil {
 		interaction.Reply(c.botapi, message, "Please send me a valid unique sharing code.")
-		return true 
+		return CommandOngoing 
 	}
 
 	interaction.Reply(c.botapi, message, fmt.Sprintf("Adding to the %s sticker set!", stickiesSet.TgStickerSetName))
@@ -64,20 +64,20 @@ func (c *AddSticker) enterUniqueCodeStage(message *tgbotapi.Message) bool {
 
 	c.stickiesSetToAddTo = stickiesSet
 	c.currentStage = Upload
-	return true 
+	return CommandOngoing
 }
 
-func (c *AddSticker) uploadStage(message *tgbotapi.Message) bool {
+func (c *AddSticker) uploadStage(message *tgbotapi.Message) CommandOngoingStatus {
 	file := uploadStickerInteraction(c.botapi, message)
 	if file == nil {
-		return true 
+		return CommandOngoing
 	}
 
 	interaction.Reply(c.botapi, message, "Thanks! Now send me an emoji that corresponds to the sticker.")
 
 	c.stickerToAdd = file
 	c.currentStage = ChooseEmoji
-	return true 
+	return CommandOngoing 
 }
 
 func uploadStickerInteraction(botapi *tgbotapi.BotAPI, message *tgbotapi.Message) tgbotapi.RequestFileData {
@@ -95,7 +95,7 @@ func uploadStickerInteraction(botapi *tgbotapi.BotAPI, message *tgbotapi.Message
 	return file
 }
 
-func (c *AddSticker) chooseEmojiStage(message *tgbotapi.Message) bool {
+func (c *AddSticker) chooseEmojiStage(message *tgbotapi.Message) CommandOngoingStatus {
 	if c.stickerToAdd == nil {
 		log.Panicf("Sticker to add is nil at %s stage", c.currentStage)
 	}
@@ -116,7 +116,7 @@ func (c *AddSticker) chooseEmojiStage(message *tgbotapi.Message) bool {
 	c.stickerToAdd = nil
 	c.emoji = ""
 
-	return true
+	return CommandOngoing
 }
 
 func chooseEmojiInteraction(botapi *tgbotapi.BotAPI, message *tgbotapi.Message) string {

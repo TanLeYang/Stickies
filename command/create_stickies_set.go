@@ -35,12 +35,12 @@ func NewCreateStickiesSetCommand(botapi *tgbotapi.BotAPI, stickiesSetRepo sticki
 	}
 }
 
-func (c *CreateStickiesSet) Start(message *tgbotapi.Message) bool {
+func (c *CreateStickiesSet) Start(message *tgbotapi.Message) CommandOngoingStatus {
 	interaction.Reply(c.botapi, message, "Please choose a sticker set name.")
-	return true
+	return CommandOngoing
 }
 
-func (c *CreateStickiesSet) Handle(message *tgbotapi.Message) bool {
+func (c *CreateStickiesSet) Handle(message *tgbotapi.Message) CommandOngoingStatus {
 	switch c.currentStage {
 	case ChooseSetName:
 		return c.chooseSetNameStage(message)
@@ -50,15 +50,15 @@ func (c *CreateStickiesSet) Handle(message *tgbotapi.Message) bool {
 		return c.chooseInitialEmojiStage(message)
 	default:
 		log.Panicf("Undefined stage for CreateStickiesSet command: %s", c.currentStage)
-		return false
+		return CommandComplete
 	}
 }
 
-func (c *CreateStickiesSet) chooseSetNameStage(message *tgbotapi.Message) bool {
+func (c *CreateStickiesSet) chooseSetNameStage(message *tgbotapi.Message) CommandOngoingStatus {
 	setName := message.Text
 	if len(setName) == 0 {
 		interaction.Reply(c.botapi, message, "Please send me plaintext!")
-		return true
+		return CommandOngoing
 	}
 
 	c.stickerSetName = setName
@@ -66,13 +66,13 @@ func (c *CreateStickiesSet) chooseSetNameStage(message *tgbotapi.Message) bool {
 
 	interaction.Reply(c.botapi, message, "Got it! Now please send me a png file or sticker to add into the set.")
 
-	return true
+	return CommandOngoing
 }
 
-func (c *CreateStickiesSet) uploadInitialStickerStage(message *tgbotapi.Message) bool {
+func (c *CreateStickiesSet) uploadInitialStickerStage(message *tgbotapi.Message) CommandOngoingStatus {
 	file := uploadStickerInteraction(c.botapi, message)
 	if file == nil {
-		return true
+		return CommandOngoing
 	}
 
 	c.stickerToAdd = &file
@@ -80,10 +80,10 @@ func (c *CreateStickiesSet) uploadInitialStickerStage(message *tgbotapi.Message)
 
 	interaction.Reply(c.botapi, message, "Ok! Now send me an emoji that corresponds to the sticker.")
 
-	return true
+	return CommandOngoing
 }
 
-func (c *CreateStickiesSet) chooseInitialEmojiStage(message *tgbotapi.Message) bool {
+func (c *CreateStickiesSet) chooseInitialEmojiStage(message *tgbotapi.Message) CommandOngoingStatus {
 	emoji := chooseEmojiInteraction(c.botapi, message)
 	c.emoji = emoji
 
@@ -95,7 +95,7 @@ func (c *CreateStickiesSet) chooseInitialEmojiStage(message *tgbotapi.Message) b
 	_, tgErr := c.createTgStickerPack(message.From.ID, tgStickerSetName, c.stickerSetName)
 	if tgErr != nil {
 		replyGenericError()
-		return true
+		return CommandOngoing
 	}
 
 	randomIdentifer := generateRandomIdentifer(c.stickerSetName)
@@ -106,7 +106,7 @@ func (c *CreateStickiesSet) chooseInitialEmojiStage(message *tgbotapi.Message) b
 	})
 	if persistErr != nil {
 		replyGenericError()
-		return true
+		return CommandOngoing
 	}
 
 	interaction.Reply(c.botapi, message, fmt.Sprintf(
@@ -117,7 +117,7 @@ func (c *CreateStickiesSet) chooseInitialEmojiStage(message *tgbotapi.Message) b
 	))
 	interaction.Reply(c.botapi, message, randomIdentifer)
 
-	return false
+	return CommandComplete
 }
 
 func (c *CreateStickiesSet) createTgStickerPack(userID int64, tgStickerSetName string, stickerSetTitle string) (*tgbotapi.APIResponse, error) {
