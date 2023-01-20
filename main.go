@@ -7,9 +7,15 @@ import (
 	"github.com/TanLeYang/stickies/db"
 	stickiesset "github.com/TanLeYang/stickies/stickies_set"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	dbConn, err := db.GetConnection()
 	if err != nil {
 		log.Fatalf("Failed to connect to db: %s", err)
