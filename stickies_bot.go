@@ -119,6 +119,8 @@ func (h *UpdateHandler) handleCommand(message *tgbotapi.Message) {
 		interaction.Reply(h.tgBotAPI, message, "Ok!")
 		h.currentCommand = nil
 		break
+	case "list":
+		h.currentCommand = command.NewListCommand(h.tgBotAPI, h.stickiesSetRepo)
 	default:
 		interaction.Reply(h.tgBotAPI, message, "Sorry, I don't understand that command. Please pick a command from the list.")
 		h.currentCommand = nil
