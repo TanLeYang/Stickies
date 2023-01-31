@@ -16,13 +16,15 @@ type StickiesBot struct {
 	tgBotAPI         *tgbotapi.BotAPI
 	stickiesSetRepo  stickiesset.StickiesSetRepository
 	chatToHandlerMap map[int64]*UpdateHandler
+	botName          string
 }
 
-func NewStickiesBot(tgBotAPI *tgbotapi.BotAPI, stickiesSetRepo stickiesset.StickiesSetRepository) *StickiesBot {
+func NewStickiesBot(tgBotAPI *tgbotapi.BotAPI, stickiesSetRepo stickiesset.StickiesSetRepository, botName string) *StickiesBot {
 	return &StickiesBot{
-		tgBotAPI:        tgBotAPI,
-		stickiesSetRepo: stickiesSetRepo,
+		tgBotAPI:         tgBotAPI,
+		stickiesSetRepo:  stickiesSetRepo,
 		chatToHandlerMap: map[int64]*UpdateHandler{},
+		botName:          botName,
 	}
 }
 
@@ -50,7 +52,7 @@ func (sb *StickiesBot) receiveUpdates(ctx context.Context, updates tgbotapi.Upda
 			return
 
 		case update := <-updates:
-			handler := sb.getHandlerForChat(update.FromChat().ID)	
+			handler := sb.getHandlerForChat(update.FromChat().ID)
 			go handler.handleUpdate(update)
 		}
 	}
@@ -62,7 +64,8 @@ func (sb *StickiesBot) getHandlerForChat(chatid int64) *UpdateHandler {
 		return handler
 	} else {
 		newHandler := UpdateHandler{
-			tgBotAPI: sb.tgBotAPI,
+			tgBotAPI:        sb.tgBotAPI,
+			botName:         sb.botName,
 			stickiesSetRepo: sb.stickiesSetRepo,
 		}
 		sb.chatToHandlerMap[chatid] = &newHandler
@@ -73,6 +76,7 @@ func (sb *StickiesBot) getHandlerForChat(chatid int64) *UpdateHandler {
 
 type UpdateHandler struct {
 	tgBotAPI        *tgbotapi.BotAPI
+	botName         string
 	currentCommand  command.Command
 	stickiesSetRepo stickiesset.StickiesSetRepository
 }
@@ -112,7 +116,7 @@ func (h *UpdateHandler) handleCommand(message *tgbotapi.Message) {
 		h.currentCommand = command.NewAddStickerCommand(h.tgBotAPI, h.stickiesSetRepo)
 		break
 	case "createset":
-		h.currentCommand = command.NewCreateStickiesSetCommand(h.tgBotAPI, h.stickiesSetRepo)
+		h.currentCommand = command.NewCreateStickiesSetCommand(h.tgBotAPI, h.botName, h.stickiesSetRepo)
 		break
 	case "done":
 		interaction.Reply(h.tgBotAPI, message, "Ok!")

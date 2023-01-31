@@ -2,21 +2,17 @@ package main
 
 import (
 	"log"
-	"os"
 
+	"github.com/TanLeYang/stickies/config"
 	"github.com/TanLeYang/stickies/db"
 	stickiesset "github.com/TanLeYang/stickies/stickies_set"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	appConf := config.LoadAppConfig()
 
-	dbConn, err := db.GetConnection()
+	dbConn, err := db.GetConnection(appConf.DbConf)
 	if err != nil {
 		log.Fatalf("Failed to connect to db: %s", err)
 	}
@@ -26,8 +22,7 @@ func main() {
 		Db: dbConn,
 	}
 
-	tgBotToken := os.Getenv("TG_BOT_TOKEN")
-	bot, err := tgbotapi.NewBotAPI(tgBotToken)
+	bot, err := tgbotapi.NewBotAPI(appConf.TgBotToken)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -35,6 +30,6 @@ func main() {
 
 	log.Printf("Telegram Bot API Authorized on account %s", bot.Self.UserName)
 
-	stickiesBot := NewStickiesBot(bot, &stickiesSetRepo)
+	stickiesBot := NewStickiesBot(bot, &stickiesSetRepo, appConf.BotName)
 	stickiesBot.Start()
 }

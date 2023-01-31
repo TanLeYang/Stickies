@@ -2,20 +2,20 @@ package db
 
 import (
 	"fmt"
-	"os"
 
+	"github.com/TanLeYang/stickies/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func GetConnection() (*gorm.DB, error) {
+func GetConnection(dbConf config.DbConfig) (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s dbname=%s password=%s",
-		os.Getenv("DATABASE_HOST"),
-		os.Getenv("DATABASE_PORT"),
-		os.Getenv("DATABASE_USER"),
-		os.Getenv("DATABASE_DBNAME"),
-		os.Getenv("DATABASE_PASSWORD"),
+		dbConf.DbHost,
+		dbConf.DbPort,
+		dbConf.DbUser,
+		dbConf.DbName,
+		dbConf.DbPassword,
 	)
 	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
 }

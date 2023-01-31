@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/TanLeYang/stickies/config"
 	"github.com/TanLeYang/stickies/interaction"
 	stickiesset "github.com/TanLeYang/stickies/stickies_set"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -20,6 +19,7 @@ const (
 
 type CreateStickiesSet struct {
 	botapi          *tgbotapi.BotAPI
+	botName         string
 	stickiesSetRepo stickiesset.StickiesSetRepository
 	currentStage    CommandStage
 	stickerSetName  string
@@ -27,9 +27,10 @@ type CreateStickiesSet struct {
 	emoji           string
 }
 
-func NewCreateStickiesSetCommand(botapi *tgbotapi.BotAPI, stickiesSetRepo stickiesset.StickiesSetRepository) *CreateStickiesSet {
+func NewCreateStickiesSetCommand(botapi *tgbotapi.BotAPI, botName string, stickiesSetRepo stickiesset.StickiesSetRepository) *CreateStickiesSet {
 	return &CreateStickiesSet{
 		botapi:          botapi,
+		botName:         botName,
 		stickiesSetRepo: stickiesSetRepo,
 		currentStage:    ChooseSetName,
 	}
@@ -91,7 +92,7 @@ func (c *CreateStickiesSet) chooseInitialEmojiStage(message *tgbotapi.Message) C
 		interaction.Reply(c.botapi, message, "Sorry, something went wrong. Please try again with another name!")
 	}
 
-	tgStickerSetName := formatSetName(c.stickerSetName)
+	tgStickerSetName := c.formatSetName(c.stickerSetName)
 	_, tgErr := c.createTgStickerPack(message.From.ID, tgStickerSetName, c.stickerSetName)
 	if tgErr != nil {
 		replyGenericError()
@@ -135,8 +136,8 @@ func (c *CreateStickiesSet) createTgStickerPack(userID int64, tgStickerSetName s
 	return c.botapi.Request(conf)
 }
 
-func formatSetName(name string) string {
-	return fmt.Sprintf("%s_by_%s", name, config.BOT_NAME)
+func (c *CreateStickiesSet) formatSetName(name string) string {
+	return fmt.Sprintf("%s_by_%s", name, c.botName)
 }
 
 func generateRandomIdentifer(setName string) string {
