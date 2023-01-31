@@ -70,7 +70,7 @@ func (c *CreateStickiesSet) chooseSetNameStage(message *tgbotapi.Message) Comman
 }
 
 func (c *CreateStickiesSet) uploadInitialStickerStage(message *tgbotapi.Message) CommandOngoingStatus {
-	file := uploadStickerInteraction(c.botapi, message)
+	file := interaction.UploadStickerInteraction(c.botapi, message)
 	if file == nil {
 		return CommandOngoing
 	}
@@ -84,7 +84,7 @@ func (c *CreateStickiesSet) uploadInitialStickerStage(message *tgbotapi.Message)
 }
 
 func (c *CreateStickiesSet) chooseInitialEmojiStage(message *tgbotapi.Message) CommandOngoingStatus {
-	emoji := chooseEmojiInteraction(c.botapi, message)
+	emoji := interaction.ChooseEmojiInteraction(c.botapi, message)
 	c.emoji = emoji
 
 	replyGenericError := func() {
